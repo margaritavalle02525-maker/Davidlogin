@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>🎮 Panel Admin | David Cheats</title>
+<title>🎮 Panel | Login DB</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -45,7 +45,7 @@ button{
   cursor:pointer;
 }
 .hidden{display:none}
-.user{
+.item{
   background:#121c33;
   padding:10px;
   border-radius:10px;
@@ -59,7 +59,6 @@ button{
 </head>
 
 <body>
-
 <div class="container">
 
 <!-- 🔐 LOGIN -->
@@ -70,24 +69,21 @@ button{
   <button onclick="login()">ENTRAR</button>
 </div>
 
-<!-- 🎮 PANEL -->
+<!-- 📦 PANEL -->
 <div id="panelBox" class="hidden">
-
   <div class="card">
-    <h2>👑 PANEL ADMIN</h2>
+    <h2>📦 DATOS DE LOGIN (DATABASE)</h2>
     <button class="logout" onclick="logout()">CERRAR SESIÓN</button>
   </div>
 
   <div class="card">
-    <h3>👥 USUARIOS REGISTRADOS</h3>
-    <div id="usersList">Cargando...</div>
+    <h3>📧 CORREOS EN COLECCIÓN <b>login</b></h3>
+    <div id="lista">Cargando...</div>
   </div>
-
 </div>
 
 </div>
 
-<!-- 🔥 FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut }
@@ -95,6 +91,7 @@ from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, getDocs }
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// 🔥 TU FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyAKrBTAkJGhB9s3E3MExqzj8mtXgKYsWRc",
   authDomain: "davidstore-51f7f.firebaseapp.com",
@@ -108,51 +105,47 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-//// 🔐 ESTADO DE SESIÓN
-onAuthStateChanged(auth, async(user)=>{
+// 🔐 SESIÓN
+onAuthStateChanged(auth, user=>{
   if(!user){
     loginBox.classList.remove("hidden");
     panelBox.classList.add("hidden");
-    return;
+  }else{
+    loginBox.classList.add("hidden");
+    panelBox.classList.remove("hidden");
+    cargarLoginDB();
   }
-
-  loginBox.classList.add("hidden");
-  panelBox.classList.remove("hidden");
-
-  cargarUsuarios();
 });
 
-//// 🔐 LOGIN
+// 🔐 LOGIN
 window.login = ()=>{
   signInWithEmailAndPassword(auth,email.value,password.value)
-    .catch(err=>alert(err.message));
+    .catch(e=>alert(e.message));
 };
 
-//// 🚪 LOGOUT
-window.logout = ()=>{
-  signOut(auth);
-};
+// 🚪 LOGOUT
+window.logout = ()=> signOut(auth);
 
-//// 👥 CARGAR USUARIOS
-async function cargarUsuarios(){
-  const lista = document.getElementById("usersList");
+// 📦 CARGAR COLECCIÓN login
+async function cargarLoginDB(){
+  const lista = document.getElementById("lista");
   lista.innerHTML = "Cargando...";
 
-  const snap = await getDocs(collection(db,"users"));
+  const snap = await getDocs(collection(db,"login"));
   let html="";
 
   snap.forEach(d=>{
-    const u = d.data();
+    const data = d.data();
     html += `
-      <div class="user">
-        📧 ${u.email || "sin email"}<br>
-        💰 Saldo: ${u.saldo ?? 0}<br>
-        🆔 ${d.id}
+      <div class="item">
+        📧 Email: ${data.email || "—"}<br>
+        💰 Saldo: ${data.saldo ?? 0}<br>
+        🆔 DocID: ${d.id}
       </div>
     `;
   });
 
-  lista.innerHTML = html || "No hay usuarios";
+  lista.innerHTML = html || "❌ No hay datos en login";
 }
 </script>
 
