@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>🎮 Panel Admin | Recargar Saldo</title>
+<title>🎮 Panel Admin</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -18,53 +18,45 @@ body{
   padding:20px;
 }
 h2{text-align:center;color:#00ffcc}
-
-.search-box{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  background:#0b1220;
-  padding:12px 14px;
-  border-radius:14px;
-  box-shadow:0 0 15px #00ffcc44;
-  margin-bottom:16px;
-}
-.search-box svg{
-  width:22px;height:22px;
-  stroke:#00ffcc;fill:none;stroke-width:2;
-}
-.search-box input{
-  flex:1;
-  background:none;
+input{
+  width:100%;
+  padding:12px;
+  margin-top:10px;
   border:none;
-  outline:none;
+  border-radius:10px;
+  background:#121c33;
   color:#fff;
 }
-
-.card{
-  background:#0e1627;
-  border-radius:16px;
-  padding:16px;
-  margin-bottom:14px;
+button{
+  width:100%;
+  padding:14px;
+  margin-top:12px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(135deg,#00ffcc,#0077ff);
+  font-weight:bold;
 }
-.user-item{
+.hidden{display:none}
+
+/* BUSCADOR */
+.search-box{
+  display:flex;
+  gap:10px;
+  background:#0b1220;
+  padding:12px;
+  border-radius:14px;
+  margin-bottom:16px;
+}
+.search-box input{background:none;margin:0}
+
+/* USUARIOS */
+.user{
   background:#121c33;
   padding:12px;
   border-radius:12px;
   margin-top:10px;
 }
-.btns{
-  display:flex;
-  gap:8px;
-  margin-top:10px;
-}
-button{
-  flex:1;
-  padding:10px;
-  border:none;
-  border-radius:10px;
-  font-weight:bold;
-}
+.btns{display:flex;gap:8px;margin-top:8px}
 .plus{background:#00ffcc}
 .minus{background:#ff4d4d}
 </style>
@@ -73,79 +65,109 @@ button{
 <body>
 <div class="container">
 
-<h2>📦 PANEL ADMIN — RECARGAR SALDO</h2>
-
-<div class="search-box">
-  <svg viewBox="0 0 24 24">
-    <circle cx="11" cy="11" r="7"/>
-    <line x1="16.5" y1="16.5" x2="22" y2="22"/>
-  </svg>
-  <input id="buscar" placeholder="Buscar correo / ID..." oninput="buscarUsuario()">
+<!-- 🔐 LOGIN -->
+<div id="loginBox">
+  <h2>🔐 LOGIN ADMIN</h2>
+  <input id="email" placeholder="Correo">
+  <input id="pass" type="password" placeholder="Contraseña">
+  <button onclick="login()">ENTRAR</button>
 </div>
 
-<div class="card" id="estado">Conectando a Firebase...</div>
-<div id="lista"></div>
+<!-- 📦 PANEL -->
+<div id="panelBox" class="hidden">
+  <h2>📦 PANEL ADMIN – RECARGAR SALDO</h2>
+
+  <div class="search-box">
+    <input id="buscar" placeholder="Buscar correo / ID" oninput="buscarUsuario()">
+  </div>
+
+  <div id="estado">Cargando usuarios...</div>
+  <div id="lista"></div>
+
+  <button onclick="logout()" style="margin-top:20px;background:#ff4d4d">CERRAR SESIÓN</button>
+</div>
 
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut }
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, collection, getDocs, doc, updateDoc, increment }
 from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+/* 🔥 FIREBASE */
 const firebaseConfig = {
   apiKey: "AIzaSyAKrBTAkJGhB9s3E3MExqzj8mtXgKYsWRc",
   authDomain: "davidstore-51f7f.firebaseapp.com",
   projectId: "davidstore-51f7f"
 };
 
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+const loginBox = document.getElementById("loginBox");
+const panelBox = document.getElementById("panelBox");
+const lista = document.getElementById("lista");
 const estado = document.getElementById("estado");
-const lista  = document.getElementById("lista");
 
-async function iniciar(){
-  try{
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
-
-    const snap = await getDocs(collection(db,"login"));
-    estado.textContent = `Usuarios encontrados: ${snap.size}`;
-
-    snap.forEach(d=>{
-      const data = d.data();
-      lista.innerHTML += `
-        <div class="user-item">
-          📧 ${data.email ?? "SIN EMAIL"}<br>
-          💰 Saldo: ${data.saldo ?? 0}<br>
-          🆔 ${d.id}
-          <div class="btns">
-            <button class="plus" onclick="cambiarSaldo('${d.id}',10)">+10</button>
-            <button class="minus" onclick="cambiarSaldo('${d.id}',-10)">-10</button>
-          </div>
-        </div>
-      `;
-    });
-
-    window.buscarUsuario = ()=>{
-      const txt = buscar.value.toLowerCase();
-      document.querySelectorAll(".user-item").forEach(i=>{
-        i.style.display = i.innerText.toLowerCase().includes(txt)
-          ? "block" : "none";
-      });
-    };
-
-    window.cambiarSaldo = async (id, v)=>{
-      await updateDoc(doc(db,"login",id),{ saldo: increment(v) });
-      location.reload();
-    };
-
-  }catch(e){
-    estado.textContent = "❌ ERROR";
-    lista.innerHTML = `<pre style="color:red">${e.message}</pre>`;
-    console.error(e);
+/* 🔐 AUTH STATE */
+onAuthStateChanged(auth,user=>{
+  if(user){
+    loginBox.classList.add("hidden");
+    panelBox.classList.remove("hidden");
+    cargarUsuarios();
+  }else{
+    loginBox.classList.remove("hidden");
+    panelBox.classList.add("hidden");
   }
+});
+
+/* LOGIN */
+window.login = ()=>{
+  signInWithEmailAndPassword(auth,email.value,pass.value)
+    .catch(e=>alert(e.message));
+};
+
+/* LOGOUT */
+window.logout = ()=>signOut(auth);
+
+/* CARGAR USUARIOS */
+async function cargarUsuarios(){
+  lista.innerHTML="";
+  const snap = await getDocs(collection(db,"login"));
+  estado.textContent = `Usuarios: ${snap.size}`;
+
+  snap.forEach(d=>{
+    const u = d.data();
+    lista.innerHTML += `
+      <div class="user">
+        📧 ${u.email}<br>
+        💰 Saldo: ${u.saldo ?? 0}<br>
+        🆔 ${d.id}
+        <div class="btns">
+          <button class="plus" onclick="cambiarSaldo('${d.id}',10)">+10</button>
+          <button class="minus" onclick="cambiarSaldo('${d.id}',-10)">-10</button>
+        </div>
+      </div>
+    `;
+  });
 }
 
-iniciar();
+/* BUSCAR */
+window.buscarUsuario = ()=>{
+  const t = buscar.value.toLowerCase();
+  document.querySelectorAll(".user").forEach(u=>{
+    u.style.display = u.innerText.toLowerCase().includes(t) ? "block":"none";
+  });
+};
+
+/* SALDO */
+window.cambiarSaldo = async (id,v)=>{
+  await updateDoc(doc(db,"login",id),{ saldo: increment(v) });
+  cargarUsuarios();
+};
 </script>
 
 </body>
