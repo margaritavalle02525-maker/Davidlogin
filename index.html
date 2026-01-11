@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>🎮 Panel Admin | David Cheats</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body{
+  margin:0;
+  background:#070b14;
+  color:#fff;
+  font-family:Arial,Helvetica,sans-serif;
+}
+.container{
+  max-width:420px;
+  margin:auto;
+  padding:20px;
+}
+.card{
+  background:#0e1627;
+  border-radius:16px;
+  padding:20px;
+  margin-bottom:16px;
+  box-shadow:0 0 20px #00ffcc33;
+}
+h2,h3{text-align:center;color:#00ffcc}
+input{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  margin-top:10px;
+  background:#121c33;
+  color:#fff;
+}
+button{
+  width:100%;
+  padding:14px;
+  margin-top:14px;
+  border:none;
+  border-radius:12px;
+  background:linear-gradient(135deg,#00ffcc,#0077ff);
+  font-weight:bold;
+  cursor:pointer;
+}
+.hidden{display:none}
+.user{
+  background:#121c33;
+  padding:10px;
+  border-radius:10px;
+  margin-top:8px;
+  font-size:14px;
+}
+.logout{
+  background:linear-gradient(135deg,#ff0055,#ff9900);
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- 🔐 LOGIN -->
+<div class="card" id="loginBox">
+  <h2>🔐 INICIAR SESIÓN</h2>
+  <input id="email" placeholder="Correo">
+  <input id="password" type="password" placeholder="Contraseña">
+  <button onclick="login()">ENTRAR</button>
+</div>
+
+<!-- 🎮 PANEL -->
+<div id="panelBox" class="hidden">
+
+  <div class="card">
+    <h2>👑 PANEL ADMIN</h2>
+    <button class="logout" onclick="logout()">CERRAR SESIÓN</button>
+  </div>
+
+  <div class="card">
+    <h3>👥 USUARIOS REGISTRADOS</h3>
+    <div id="usersList">Cargando...</div>
+  </div>
+
+</div>
+
+</div>
+
+<!-- 🔥 FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut }
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, collection, getDocs }
+from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAKrBTAkJGhB9s3E3MExqzj8mtXgKYsWRc",
+  authDomain: "davidstore-51f7f.firebaseapp.com",
+  projectId: "davidstore-51f7f",
+  storageBucket: "davidstore-51f7f.firebasestorage.app",
+  messagingSenderId: "363278778609",
+  appId: "1:363278778609:web:0714ebb6903b931a616950"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+//// 🔐 ESTADO DE SESIÓN
+onAuthStateChanged(auth, async(user)=>{
+  if(!user){
+    loginBox.classList.remove("hidden");
+    panelBox.classList.add("hidden");
+    return;
+  }
+
+  loginBox.classList.add("hidden");
+  panelBox.classList.remove("hidden");
+
+  cargarUsuarios();
+});
+
+//// 🔐 LOGIN
+window.login = ()=>{
+  signInWithEmailAndPassword(auth,email.value,password.value)
+    .catch(err=>alert(err.message));
+};
+
+//// 🚪 LOGOUT
+window.logout = ()=>{
+  signOut(auth);
+};
+
+//// 👥 CARGAR USUARIOS
+async function cargarUsuarios(){
+  const lista = document.getElementById("usersList");
+  lista.innerHTML = "Cargando...";
+
+  const snap = await getDocs(collection(db,"users"));
+  let html="";
+
+  snap.forEach(d=>{
+    const u = d.data();
+    html += `
+      <div class="user">
+        📧 ${u.email || "sin email"}<br>
+        💰 Saldo: ${u.saldo ?? 0}<br>
+        🆔 ${d.id}
+      </div>
+    `;
+  });
+
+  lista.innerHTML = html || "No hay usuarios";
+}
+</script>
+
+</body>
+</html>
